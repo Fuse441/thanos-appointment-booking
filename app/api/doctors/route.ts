@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
     }
 
     const doctors = readJsonFile<IDoctor[]>(FILE);
+    const counter = doctors.length + 1;
 
     const duplicated = doctors.find(
       (d) =>
@@ -43,8 +44,6 @@ export async function POST(req: NextRequest) {
         { status: 409 },
       );
     }
-
-    const counter = doctors.length + 1;
 
     const doctor: IDoctor = {
       id: crypto.randomUUID(),
