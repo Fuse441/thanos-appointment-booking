@@ -24,3 +24,18 @@ export async function api<TResponse = unknown, TBody = unknown>(
 
   return json;
 }
+
+export async function streamToJson(stream: ReadableStream) {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+
+  let result = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    result += decoder.decode(value);
+  }
+
+  return JSON.parse(result || "[]");
+}

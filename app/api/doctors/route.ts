@@ -1,22 +1,60 @@
 import { readJsonFile, writeJsonFile } from "@/helper/file.db";
 import { IDoctor } from "@/schemas/doctor";
 import { NextRequest, NextResponse } from "next/server";
-
-const FILE = "/tmp/doctors.json";
+import { put, get } from "@vercel/blob";
+import { streamToJson } from "@/helper/api.helper";
+const FILE = "tmp/doctors.json";
 
 // =========================
 // GET ALL
 // =========================
-export async function GET() {
-  const doctors = readJsonFile<IDoctor[]>(FILE);
 
-  return NextResponse.json({
-    data: doctors.filter((d) => !d.deleted_at),
+export async function GET() {
+  try {
+    const res = await get(FILE, { access: "private" });
+
+    // ไม่มีไฟล์
+    if (!res || res.statusCode !== 200 || !res.stream) {
+      return NextResponse.json({ data: [] });
+    }
+
+    // อ่าน stream → JSON
+    const data = await streamToJson(res.stream);
+
+    return NextResponse.json({
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ data: [] });
+  }
+}
+
+// helper load
+async function loadDoctors(): Promise<IDoctor[]> {
+  try {
+    const res = await get(FILE, { access: "private" });
+
+    if (!res || res.statusCode !== 200 || !res.stream) return [];
+
+    return await streamToJson(res.stream);
+  } catch {
+    return [];
+  }
+}
+
+// helper save
+async function saveDoctors(data: IDoctor[]) {
+  await put(FILE, JSON.stringify(data), {
+    access: "private",
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    contentType: "application/json",
   });
 }
 
 // =========================
-// CREATE
+// POST (CREATE)
 // =========================
 export async function POST(req: NextRequest) {
   try {
@@ -29,13 +67,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const doctors = readJsonFile<IDoctor[]>(FILE);
+    const doctors = await loadDoctors();
+
     const counter = doctors.length + 1;
+
+    const employeeId = `${body.first_name}.${body.last_name
+      ?.charAt(0)
+      .toUpperCase()}-${counter}`;
 
     const duplicated = doctors.find(
       (d) =>
-        d.employee_id ===
-        `${body.first_name}.${body.last_name?.charAt(0).toUpperCase()}-${counter}`,
+        d.employee_id === employeeId ||
+        d.license_number === body.license_number,
     );
 
     if (duplicated) {
@@ -47,7 +90,8 @@ export async function POST(req: NextRequest) {
 
     const doctor: IDoctor = {
       id: crypto.randomUUID(),
-      employee_id: `${body.first_name}.${body.last_name?.charAt(0).toUpperCase()}-${counter}`,
+      employee_id: employeeId,
+
       first_name: body.first_name,
       last_name: body.last_name,
       department_id: body.department_id,
@@ -58,6 +102,7 @@ export async function POST(req: NextRequest) {
       is_active: body.is_active ?? true,
       available_days: body.available_days ?? [],
       created_at: new Date().toISOString(),
+
       schedule: body.schedule ?? {
         id: crypto.randomUUID(),
         workingDay: [],
@@ -69,16 +114,32 @@ export async function POST(req: NextRequest) {
       },
     };
 
-    doctors.push(doctor);
-    writeJsonFile(FILE, doctors);
+    const updated = [...doctors, doctor];
+
+    await saveDoctors(updated);
 
     return NextResponse.json(
-      { message: "Doctor created successfully", data: doctor },
+      {
+        message: "Doctor created successfully",
+        data: doctor,
+      },
       { status: 201 },
     );
-  } catch (error) {
+  } catch (error: unknown) {
+    console.error("API ERROR:", error);
+
     return NextResponse.json(
-      { message: "Internal server error", error: error },
+      {
+        message: "Internal server error",
+        error:
+          error instanceof Error
+            ? {
+              message: error.message,
+              stack: error.stack,
+              name: error.name,
+            }
+            : String(error),
+      },
       { status: 500 },
     );
   }
