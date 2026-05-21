@@ -1,65 +1,86 @@
 import { readJsonFile, writeJsonFile } from "@/helper/file.db";
-import { randomDoctor } from "@/helper/localhost.helper";
 import { IDoctor } from "@/schemas/doctor";
-import { state } from "@/state/common_state";
-import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-const FILE_NAME = "doctors.json";
-export async function GET(req: NextRequest) {
-  const { searchParams } = req.nextUrl;
-  const department = searchParams.get("department");
 
-  const doctors = readJsonFile<IDoctor[]>(FILE_NAME);
+const FILE = "doctors.json";
 
-  const filtered = department
-    ? doctors.filter((d) => d.department_id === department)
-    : doctors;
+// =========================
+// GET ALL
+// =========================
+export async function GET() {
+  const doctors = readJsonFile<IDoctor[]>(FILE);
 
-  return NextResponse.json({ data: filtered });
+  return NextResponse.json({
+    data: doctors.filter((d) => !d.deleted_at),
+  });
 }
 
+// =========================
+// CREATE
+// =========================
 export async function POST(req: NextRequest) {
   try {
-    const body: IDoctor = await req.json();
+    const body: Partial<IDoctor> = await req.json();
 
-    const { first_name, last_name, license_number } = body;
-
-    if (!first_name || !last_name || !license_number) {
+    if (!body.first_name || !body.last_name || !body.department_id) {
       return NextResponse.json(
-        {
-          error: "first_name, last_name, license_number are required",
-        },
+        { message: "missing required fields" },
         { status: 400 },
       );
     }
 
-    const doctors = readJsonFile<IDoctor[]>(FILE_NAME);
+    const doctors = readJsonFile<IDoctor[]>(FILE);
 
     const duplicated = doctors.find(
       (d) =>
-        d.license_number === license_number ||
-        d.employee_id === body.employee_id,
+        d.employee_id === body.employee_id ||
+        d.license_number === body.license_number,
     );
 
     if (duplicated) {
       return NextResponse.json(
-        { error: "Doctor already exists" },
+        { message: "Doctor already exists" },
         { status: 409 },
       );
     }
 
-    const newDoctor: IDoctor = {
-      ...body,
+    const counter = doctors.length + 1;
+
+    const doctor: IDoctor = {
       id: crypto.randomUUID(),
+      employee_id: `${body.first_name}.${body.last_name?.charAt(0).toUpperCase()}-${counter}`,
+      first_name: body.first_name,
+      last_name: body.last_name,
+      department_id: body.department_id,
+      speciality: body.speciality ?? "",
+      license_number: body.license_number ?? "",
+      phone: body.phone ?? "",
+      email: body.email ?? "",
+      is_active: body.is_active ?? true,
+      available_days: body.available_days ?? [],
       created_at: new Date().toISOString(),
+      schedule: body.schedule ?? {
+        id: crypto.randomUUID(),
+        workingDay: [],
+        startTime: "08:00",
+        endTime: "17:00",
+        slotTimeworking: [],
+        breakTime: "12:00 - 13:00",
+        acceptsBooking: true,
+      },
     };
 
-    doctors.push(newDoctor);
+    doctors.push(doctor);
+    writeJsonFile(FILE, doctors);
 
-    writeJsonFile(FILE_NAME, doctors);
-
-    return NextResponse.json({ data: newDoctor }, { status: 201 });
-  } catch (error) {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return NextResponse.json(
+      { message: "Doctor created successfully", data: doctor },
+      { status: 201 },
+    );
+  } catch {
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
