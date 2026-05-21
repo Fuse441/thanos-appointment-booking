@@ -1,7 +1,3 @@
-import { UUID } from "crypto";
-import { IDepartment, TDepartmentID } from "./departments";
-type DoctorIdOnly = Pick<IDoctor, "id">;
-
 export interface IDoctor {
   id: string; // รหัสเฉพาะสำหรับแต่ละแพทย์
   employee_id: string; // รหัสพนักงาน เช่น "DR-001"

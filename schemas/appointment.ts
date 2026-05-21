@@ -35,6 +35,7 @@ export interface IAppointmentTypeDef {
 export interface AppointmentTypeRule {
   id: string;
   name: string;
+  type: TAppointmentType;
   duration: number; // minutes
   buffer: number; // minutes after appointment
   color: string; // tailwind bg class
