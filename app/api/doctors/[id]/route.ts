@@ -2,7 +2,7 @@ import { readJsonFile, writeJsonFile } from "@/helper/file.db";
 import { IDoctor } from "@/schemas/doctor";
 import { NextRequest, NextResponse } from "next/server";
 
-const FILE = "doctors.json";
+const FILE = "/tmp/doctors.json";
 
 type Context = {
   params: Promise<{ id: string }>;

@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 // app/api/appointments/route.ts
 
-const FILE_NAME = "appointments.json";
+const FILE_NAME = "/tmp/appointments.json";
 
 // =====================
 // GET
