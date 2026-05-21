@@ -33,8 +33,8 @@ export async function POST(req: NextRequest) {
 
     const duplicated = doctors.find(
       (d) =>
-        d.employee_id === body.employee_id ||
-        d.license_number === body.license_number,
+        d.employee_id ===
+        `${body.first_name}.${body.last_name?.charAt(0).toUpperCase()}-${counter}`,
     );
 
     if (duplicated) {
