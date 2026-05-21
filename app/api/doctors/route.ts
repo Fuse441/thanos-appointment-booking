@@ -76,9 +76,9 @@ export async function POST(req: NextRequest) {
       { message: "Doctor created successfully", data: doctor },
       { status: 201 },
     );
-  } catch {
+  } catch (error) {
     return NextResponse.json(
-      { message: "Internal server error" },
+      { message: "Internal server error", error: error },
       { status: 500 },
     );
   }
