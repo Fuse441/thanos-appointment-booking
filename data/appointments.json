@@ -1,0 +1,13 @@
+[
+  {
+    "id": 1779337625282,
+    "patient": "Fuse",
+    "doctor": "bd56fee1-8afa-455d-9e6b-59bb17e4be56",
+    "dept": "de-001",
+    "date": "2026-05-22",
+    "time": "09:00",
+    "type": "Consultation",
+    "status": "confirmed",
+    "staff": "Tmp"
+  }
+]

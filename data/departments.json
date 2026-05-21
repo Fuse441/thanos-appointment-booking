@@ -1,0 +1,80 @@
+[
+  {
+    "id": "de-001",
+    "code": "CARD",
+    "name": "โรคหัวใจ",
+    "description": "ดูแลรักษาโรคหัวใจและระบบหลอดเลือด",
+    "phone": "021111111",
+    "email": "cardiology@hospital.com",
+    "building": "อาคาร A",
+    "floor": "3",
+    "room": "A-301",
+    "is_active": true,
+    "created_at": "2024-06-01T00:00:00.000Z"
+  },
+  {
+    "id": "de-002",
+    "code": "NEUR",
+    "name": "ระบบประสาท",
+    "description": "ดูแลรักษาโรคเกี่ยวกับสมองและระบบประสาท",
+    "phone": "022222222",
+    "email": "neurology@hospital.com",
+    "building": "อาคาร B",
+    "floor": "2",
+    "room": "B-201",
+    "is_active": true,
+    "created_at": "2024-06-01T00:00:00.000Z"
+  },
+  {
+    "id": "de-003",
+    "code": "ORTH",
+    "name": "ศัลยกรรมกระดูก",
+    "description": "รักษากระดูก ข้อ และกล้ามเนื้อ",
+    "phone": "023333333",
+    "email": "orthopedics@hospital.com",
+    "building": "อาคาร C",
+    "floor": "4",
+    "room": "C-401",
+    "is_active": true,
+    "created_at": "2024-06-01T00:00:00.000Z"
+  },
+  {
+    "id": "de-004",
+    "code": "PED",
+    "name": "กุมารเวชกรรม",
+    "description": "ดูแลรักษาเด็กและทารก",
+    "phone": "024444444",
+    "email": "pediatrics@hospital.com",
+    "building": "อาคาร D",
+    "floor": "1",
+    "room": "D-101",
+    "is_active": true,
+    "created_at": "2024-06-01T00:00:00.000Z"
+  },
+  {
+    "id": "de-005",
+    "code": "DERM",
+    "name": "ผิวหนัง",
+    "description": "รักษาโรคผิวหนัง เส้นผม และเล็บ",
+    "phone": "025555555",
+    "email": "dermatology@hospital.com",
+    "building": "อาคาร E",
+    "floor": "5",
+    "room": "E-501",
+    "is_active": true,
+    "created_at": "2024-06-01T00:00:00.000Z"
+  },
+  {
+    "id": "de-006",
+    "code": "GEN",
+    "name": "อายุรกรรมทั่วไป",
+    "description": "ตรวจรักษาโรคทั่วไปและโรคภายใน",
+    "phone": "026666666",
+    "email": "general@hospital.com",
+    "building": "อาคาร A",
+    "floor": "2",
+    "room": "A-201",
+    "is_active": true,
+    "created_at": "2024-06-01T00:00:00.000Z"
+  }
+]

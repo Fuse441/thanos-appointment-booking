@@ -1,68 +1,41 @@
+import { readJsonFile, writeJsonFile } from "@/helper/file.db";
 import { IDoctor } from "@/schemas/doctor";
-import { state } from "@/state/common_state";
 import { NextRequest, NextResponse } from "next/server";
-let counter = state.doctors.length;
+
 type Params = {
-  params: Promise<{
+  params: {
     id: string;
-  }>;
+  };
 };
+
+// =========================
+// GET ALL
+// =========================
 export async function GET() {
+  const doctors = readJsonFile<IDoctor[]>("doctors.json");
+
   return NextResponse.json({
-    data: state.doctors,
+    data: doctors.filter((d) => !d.deleted_at),
   });
 }
 
+// =========================
+// CREATE
+// =========================
 export async function POST(req: NextRequest) {
   try {
     const body: Partial<IDoctor> = await req.json();
 
-    // if (!body.employee_id) {
-    //   return NextResponse.json(
-    //     {
-    //       message: "employee_id is required",
-    //     },
-    //     { status: 400 },
-    //   );
-    // }
-
-    if (!body.first_name) {
+    if (!body.first_name || !body.last_name || !body.department_id) {
       return NextResponse.json(
-        {
-          message: "first_name is required",
-        },
+        { message: "missing required fields" },
         { status: 400 },
       );
     }
 
-    if (!body.last_name) {
-      return NextResponse.json(
-        {
-          message: "last_name is required",
-        },
-        { status: 400 },
-      );
-    }
+    const doctors = readJsonFile<IDoctor[]>("doctors.json");
 
-    if (!body.department_id) {
-      return NextResponse.json(
-        {
-          message: "department_id is required",
-        },
-        { status: 400 },
-      );
-    }
-
-    if (!body.schedule) {
-      return NextResponse.json(
-        {
-          message: "schedule is required",
-        },
-        { status: 400 },
-      );
-    }
-
-    const duplicated = state.doctors.find(
+    const duplicated = doctors.find(
       (d) =>
         d.employee_id === body.employee_id ||
         d.license_number === body.license_number,
@@ -70,56 +43,43 @@ export async function POST(req: NextRequest) {
 
     if (duplicated) {
       return NextResponse.json(
-        {
-          message: "Doctor already exists",
-        },
+        { message: "Doctor already exists" },
         { status: 409 },
       );
     }
 
+    const counter = doctors.length + 1;
+
     const doctor: IDoctor = {
       id: crypto.randomUUID(),
 
-      employee_id: `${body.first_name}.${body.last_name.charAt(0).toUpperCase()}-${counter++}`,
+      employee_id: `${body.first_name}.${body.last_name?.charAt(0).toUpperCase()}-${counter}`,
 
       first_name: body.first_name,
-
       last_name: body.last_name,
-
       department_id: body.department_id,
-
       speciality: body.speciality ?? "",
-
       license_number: body.license_number ?? "",
-
       phone: body.phone ?? "",
-
       email: body.email ?? "",
-
       is_active: body.is_active ?? true,
-
       available_days: body.available_days ?? [],
 
       created_at: new Date().toISOString(),
 
-      schedule: {
-        id: body.schedule.id ?? crypto.randomUUID(),
-
-        workingDay: body.schedule.workingDay ?? [],
-
-        startTime: body.schedule.startTime ?? "08:00",
-
-        endTime: body.schedule.endTime ?? "17:00",
-
-        slotTimeworking: body.schedule.slotTimeworking ?? [],
-
-        breakTime: body.schedule.breakTime ?? "12:00 - 13:00",
-
-        acceptsBooking: body.schedule.acceptsBooking ?? true,
+      schedule: body.schedule ?? {
+        id: crypto.randomUUID(),
+        workingDay: [],
+        startTime: "08:00",
+        endTime: "17:00",
+        slotTimeworking: [],
+        breakTime: "12:00 - 13:00",
+        acceptsBooking: true,
       },
     };
 
-    state.doctors.push(doctor);
+    doctors.push(doctor);
+    writeJsonFile("doctors.json", doctors);
 
     return NextResponse.json(
       {
@@ -129,79 +89,70 @@ export async function POST(req: NextRequest) {
       { status: 201 },
     );
   } catch (error) {
-    console.error(error);
-
     return NextResponse.json(
-      {
-        message: "Internal server error",
-      },
+      { message: "Internal server error" },
       { status: 500 },
-    );
-  }
-} // UPDATE doctor
-export async function PUT(req: NextRequest, { params }: Params) {
-  try {
-    const { id } = await params;
-
-    const body: Partial<IDoctor> = await req.json();
-
-    const index = state.doctors.findIndex((d) => d.id === id && !d.deleted_at);
-
-    if (index === -1) {
-      return NextResponse.json(
-        {
-          error: "Doctor not found",
-        },
-        {
-          status: 404,
-        },
-      );
-    }
-
-    state.doctors[index] = {
-      ...state.doctors[index],
-      ...body,
-      updated_at: new Date().toISOString(),
-    };
-
-    return NextResponse.json({
-      data: state.doctors[index],
-      message: "Doctor updated successfully",
-    });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        error: "Invalid request body",
-      },
-      {
-        status: 400,
-      },
     );
   }
 }
 
-// SOFT DELETE doctor
-export async function DELETE(_: NextRequest, { params }: Params) {
-  const { id } = await params;
+// =========================
+// UPDATE
+// =========================
+export async function PUT(req: NextRequest, { params }: Params) {
+  try {
+    const { id } = params;
+    const body: Partial<IDoctor> = await req.json();
 
-  const index = state.doctors.findIndex((d) => d.id === id && !d.deleted_at);
+    const doctors = readJsonFile<IDoctor[]>("doctors.json");
 
-  if (index === -1) {
+    const index = doctors.findIndex((d) => d.id === id && !d.deleted_at);
+
+    if (index === -1) {
+      return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
+    }
+
+    doctors[index] = {
+      ...doctors[index],
+      ...body,
+      updated_at: new Date().toISOString(),
+    };
+
+    writeJsonFile("doctors.json", doctors);
+
+    return NextResponse.json({
+      data: doctors[index],
+      message: "Doctor updated successfully",
+    });
+  } catch (error) {
     return NextResponse.json(
-      {
-        error: "Doctor not found",
-      },
-      {
-        status: 404,
-      },
+      { error: "Invalid request body" },
+      { status: 400 },
     );
   }
+}
 
-  state.doctors[index] = {
-    ...state.doctors[index],
+// =========================
+// SOFT DELETE
+// =========================
+export async function DELETE(_: NextRequest, { params }: Params) {
+  const { id } = params;
+
+  const doctors = readJsonFile<IDoctor[]>("doctors.json");
+
+  const index = doctors.findIndex((d) => d.id === id && !d.deleted_at);
+
+  if (index === -1) {
+    return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
+  }
+
+  doctors[index] = {
+    ...doctors[index],
     deleted_at: new Date().toISOString(),
     is_active: false,
   };
+
+  writeJsonFile("doctors.json", doctors);
 
   return NextResponse.json({
     message: "Doctor deleted successfully",

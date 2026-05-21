@@ -1,67 +1,50 @@
 // app/api/appointments/route.ts
 
+import { readJsonFile, writeJsonFile } from "@/helper/file.db";
 import { IAppointment } from "@/schemas/appointment";
 import { NextRequest, NextResponse } from "next/server";
 
-let appointments: IAppointment[] = [];
+// app/api/appointments/route.ts
 
+const FILE_NAME = "appointments.json";
+
+// =====================
+// GET
+// =====================
 export async function GET() {
+  const appointments = readJsonFile<IAppointment[]>(FILE_NAME);
+
   return NextResponse.json({
     data: appointments,
   });
 }
 
+// =====================
+// POST (BOOK APPOINTMENT)
+// =====================
 export async function POST(req: NextRequest) {
   try {
     const body: IAppointment = await req.json();
 
-    if (!body.patient) {
+    if (!body.patient || !body.doctor || !body.date || !body.time) {
       return NextResponse.json(
-        {
-          message: "Patient is required",
-        },
+        { message: "Missing required fields" },
         { status: 400 },
       );
     }
 
-    if (!body.doctor) {
-      return NextResponse.json(
-        {
-          message: "Doctor is required",
-        },
-        { status: 400 },
-      );
-    }
+    const appointments = readJsonFile<IAppointment[]>(FILE_NAME);
 
-    if (!body.date) {
-      return NextResponse.json(
-        {
-          message: "Date is required",
-        },
-        { status: 400 },
-      );
-    }
-
-    if (!body.time) {
-      return NextResponse.json(
-        {
-          message: "Time is required",
-        },
-        { status: 400 },
-      );
-    }
-
+    // validate past date
     const appointmentDate = new Date(`${body.date}T${body.time}`);
-
     if (appointmentDate < new Date()) {
       return NextResponse.json(
-        {
-          message: "Cannot book in the past",
-        },
+        { message: "Cannot book in the past" },
         { status: 400 },
       );
     }
 
+    // duplicate check
     const duplicated = appointments.find(
       (a) =>
         a.doctor === body.doctor &&
@@ -72,9 +55,7 @@ export async function POST(req: NextRequest) {
 
     if (duplicated) {
       return NextResponse.json(
-        {
-          message: "This slot is already booked",
-        },
+        { message: "This slot is already booked" },
         { status: 409 },
       );
     }
@@ -85,6 +66,8 @@ export async function POST(req: NextRequest) {
     };
 
     appointments.push(appointment);
+
+    writeJsonFile(FILE_NAME, appointments);
 
     return NextResponse.json(
       {
@@ -97,9 +80,7 @@ export async function POST(req: NextRequest) {
     console.error(error);
 
     return NextResponse.json(
-      {
-        message: "Internal server error",
-      },
+      { message: "Internal server error" },
       { status: 500 },
     );
   }
